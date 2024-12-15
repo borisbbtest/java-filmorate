@@ -49,7 +49,7 @@ public class FilmorateApplicationTests {
                         .content(invalidUserJson))
                 .andExpect(status().isInternalServerError());  // Ожидаем ошибку 500
     }
-
+    //
     @Test
     void testAddUserAndFilm() throws Exception {
         String userJson = "{ \"email\": \"user@example.com\", \"login\": \"user123\", \"name\": \"Test\", \"birthday\": \"1990-01-01\" }";
