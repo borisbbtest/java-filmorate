@@ -48,10 +48,6 @@ Template repository for Filmorate project.
 
 ## Примеры SQL-запросов
 
-### Получение всех фильмов
-```sql 
-SELECT * FROM films;
-```
 ```
 Table: films
 -------------------------
