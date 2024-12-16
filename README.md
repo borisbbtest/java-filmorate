@@ -83,3 +83,48 @@ Table: friendships
 | status (ENUM)         |
 
 ```
+## Cхемы базы данных в PostgreSQL:
+```sql
+
+CREATE TABLE films (
+    id SERIAL PRIMARY KEY, -- Уникальный идентификатор фильма
+    name VARCHAR(255) NOT NULL, -- Название фильма
+    description TEXT, -- Описание фильма
+    release_date DATE NOT NULL, -- Дата выхода
+    duration INT NOT NULL, -- Продолжительность в минутах
+    rating VARCHAR(10) -- Возрастной рейтинг (G, PG, PG-13, R, NC-17)
+);
+
+CREATE TABLE genres (
+    id SERIAL PRIMARY KEY, -- Уникальный идентификатор жанра
+    name VARCHAR(255) NOT NULL -- Название жанра
+);
+
+CREATE TABLE film_genres (
+    film_id INT NOT NULL REFERENCES films(id) ON DELETE CASCADE, -- Ссылка на фильм
+    genre_id INT NOT NULL REFERENCES genres(id) ON DELETE CASCADE, -- Ссылка на жанр
+    PRIMARY KEY (film_id, genre_id)
+);
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY, -- Уникальный идентификатор пользователя
+    email VARCHAR(255) NOT NULL UNIQUE, -- Адрес электронной почты
+    login VARCHAR(50) NOT NULL UNIQUE, -- Логин
+    name VARCHAR(255), -- Имя
+    birthday DATE NOT NULL -- Дата рождения
+);
+
+CREATE TABLE friendships (
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- Ссылка на пользователя
+    friend_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- Ссылка на друга
+    status VARCHAR(20) DEFAULT 'pending', -- Статус дружбы (pending, confirmed)
+    PRIMARY KEY (user_id, friend_id)
+);
+
+CREATE TABLE likes (
+    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- Пользователь, поставивший лайк
+    film_id INT NOT NULL REFERENCES films(id) ON DELETE CASCADE, -- Фильм, которому поставлен лайк
+    PRIMARY KEY (user_id, film_id)
+);
+
+```
