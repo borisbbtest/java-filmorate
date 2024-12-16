@@ -128,3 +128,127 @@ CREATE TABLE likes (
 );
 
 ```
+### Примеры SQL-запросов для работы с описанной схемой базы данных
+
+### **Фильмы**
+1. **Добавить фильм:**
+   ```sql
+   INSERT INTO films (name, description, release_date, duration, rating)
+   VALUES ('Интерстеллар', 'Космическая одиссея', '2014-11-07', 169, 'PG-13');
+   ```
+
+2. **Получить все фильмы:**
+   ```sql
+   SELECT * FROM films;
+   ```
+
+3. **Получить фильмы по жанру:**
+   ```sql
+   SELECT f.id, f.name, g.name AS genre
+   FROM films f
+   JOIN film_genres fg ON f.id = fg.film_id
+   JOIN genres g ON fg.genre_id = g.id
+   WHERE g.name = 'Драма';
+   ```
+
+4. **Обновить описание фильма:**
+   ```sql
+   UPDATE films
+   SET description = 'Эпическое приключение в космосе'
+   WHERE id = 1;
+   ```
+
+5. **Удалить фильм:**
+   ```sql
+   DELETE FROM films WHERE id = 1;
+   ```
+
+---
+
+### **Жанры**
+1. **Добавить жанр:**
+   ```sql
+   INSERT INTO genres (name) VALUES ('Драма');
+   ```
+
+2. **Связать фильм с жанром:**
+   ```sql
+   INSERT INTO film_genres (film_id, genre_id)
+   VALUES (1, 2); -- где 1 - ID фильма, 2 - ID жанра
+   ```
+
+3. **Получить все жанры фильма:**
+   ```sql
+   SELECT g.name
+   FROM genres g
+   JOIN film_genres fg ON g.id = fg.genre_id
+   WHERE fg.film_id = 1;
+   ```
+
+---
+
+### **Пользователи**
+1. **Добавить пользователя:**
+   ```sql
+   INSERT INTO users (email, login, name, birthday)
+   VALUES ('example@mail.com', 'example_user', 'Иван Иванов', '1990-01-01');
+   ```
+
+2. **Получить всех пользователей:**
+   ```sql
+   SELECT * FROM users;
+   ```
+
+3. **Найти пользователя по email:**
+   ```sql
+   SELECT * FROM users WHERE email = 'example@mail.com';
+   ```
+
+---
+
+### **Дружба**
+1. **Отправить запрос на дружбу:**
+   ```sql
+   INSERT INTO friendships (user_id, friend_id, status)
+   VALUES (1, 2, 'pending');
+   ```
+
+2. **Подтвердить дружбу:**
+   ```sql
+   UPDATE friendships
+   SET status = 'confirmed'
+   WHERE user_id = 1 AND friend_id = 2;
+   ```
+
+3. **Получить друзей пользователя:**
+   ```sql
+   SELECT u.id, u.name
+   FROM users u
+   JOIN friendships f ON u.id = f.friend_id
+   WHERE f.user_id = 1 AND f.status = 'confirmed';
+   ```
+
+---
+
+### **Лайки**
+1. **Добавить лайк фильму:**
+   ```sql
+   INSERT INTO likes (user_id, film_id) VALUES (1, 2);
+   ```
+
+2. **Получить количество лайков у фильма:**
+   ```sql
+   SELECT COUNT(*) AS like_count
+   FROM likes
+   WHERE film_id = 2;
+   ```
+
+3. **Топ-3 популярных фильмов по лайкам:**
+   ```sql
+   SELECT f.id, f.name, COUNT(l.user_id) AS like_count
+   FROM films f
+   LEFT JOIN likes l ON f.id = l.film_id
+   GROUP BY f.id, f.name
+   ORDER BY like_count DESC
+   LIMIT 3;
+   ```
