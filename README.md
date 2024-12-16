@@ -83,4 +83,3 @@ Table: friendships
 | status (ENUM)         |
 
 ```
-```
