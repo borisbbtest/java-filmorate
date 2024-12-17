@@ -66,6 +66,7 @@ public class FilmService {
         // Возвращаем обновленный фильм
         return existingFilm;
     }
+
     public List<Film> getAllFilm() {
         return  filmStorage.getAllFilms();
     }
@@ -92,7 +93,6 @@ public class FilmService {
         film.getLikes().remove(userId);
         filmStorage.updateFilm(film);
     }
-
 
     public List<Film> getTopFilms(int count) {
         return filmStorage.getAllFilms().stream()
