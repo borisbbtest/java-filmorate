@@ -23,17 +23,7 @@ public class FilmController {
 
     @PostMapping
     public Film addFilm(@Valid @RequestBody Film film, BindingResult result) {
-        // Проверка валидации
-        if (result.hasErrors()) {
-            List<String> errors = result.getFieldErrors().stream()
-                    .map(error -> "Field: '" + error.getField() +
-                            "', Rejected value: '" + error.getRejectedValue() +
-                            "', Error: " + error.getDefaultMessage())
-                    .collect(Collectors.toList());
-            log.error("Validation errors: {}", errors);
-            throw new ValidationException("Validation failed for film", errors);
-        }
-
+        validateRequest(result);
         log.info("Adding film: {}", film);
         return filmService.addFilm(film);
     }
@@ -75,5 +65,26 @@ public class FilmController {
             throw new NotFoundException("No popular films found");
         }
         return films;
+    }
+
+    /**
+     * Проверяет наличие ошибок валидации.
+     *
+     * @param result BindingResult для проверки ошибок
+     */
+    private void validateRequest(BindingResult result) {
+        if (result.hasErrors()) {
+            // Собираем ошибки
+            List<String> errors = result.getFieldErrors().stream()
+                    .map(error -> "Field: '" + error.getField() +
+                            "', Rejected value: '" + error.getRejectedValue() +
+                            "', Error: " + error.getDefaultMessage())
+                    .collect(Collectors.toList());
+
+            log.error("Validation errors: {}", errors);
+
+            // Выбрасываем ValidationException с подробными ошибками
+            throw new ValidationException("Validation failed for film", errors);
+        }
     }
 }
