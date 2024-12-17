@@ -22,6 +22,7 @@ public class UserService {
         return user;
     }
 
+
     public User updateUser(int id, User user) {
         User existingUser = userStorage.getUserById(id);
         existingUser.setEmail(user.getEmail());

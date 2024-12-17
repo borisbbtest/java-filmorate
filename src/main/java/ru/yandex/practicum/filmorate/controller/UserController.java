@@ -4,13 +4,16 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.EntityNotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -43,6 +46,22 @@ public class UserController {
         }
         return updatedUser;
     }
+
+    @PutMapping
+    public User updateUser(@Valid @RequestBody User user, BindingResult result) {
+        // Проверка на наличие ошибок валидации
+        validateRequest(result);
+
+        // Получаем ID из объекта пользователя
+        int id = user.getId();
+        User updatedUser = userService.updateUser(id, user);
+        if (updatedUser == null) {
+            throw new EntityNotFoundException("User not found");
+        }
+        log.info("User updated successfully: {}", updatedUser);
+        return updatedUser;
+    }
+
 
     @GetMapping("/{id}")
     public User getUser(@PathVariable int id) {
@@ -85,17 +104,21 @@ public class UserController {
      */
     private void validateRequest(BindingResult result) {
         if (result.hasErrors()) {
-            // Собираем ошибки
-            List<String> errorMessages = result.getFieldErrors().stream()
-                    .map(error -> "Field: " + error.getField() +
-                            ", Value: " + error.getRejectedValue() +
-                            ", Message: " + error.getDefaultMessage())
-                    .toList();
+            // Создаём HashMap для сбора ошибок
+            Map<String, String> errorDetails = new HashMap<>();
 
-            log.error("Validation errors: {}", errorMessages);
+            // Проходим по всем ошибкам в BindingResult
+            for (FieldError error : result.getFieldErrors()) {
+                // Добавляем поле с ошибкой и сообщение в HashMap
+                errorDetails.put(error.getField(), error.getRejectedValue().toString());
+            }
 
-            // Выбрасываем ValidationException с подробными ошибками
-            throw new ValidationException("Validation failed", errorMessages);
+            // Логируем ошибки
+            log.error("Validation errors: {}", errorDetails);
+
+            // Выбрасываем ValidationException с ошибками в формате JSON
+            throw new ValidationException("Validation failed", errorDetails);
         }
     }
+
 }

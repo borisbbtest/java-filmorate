@@ -4,14 +4,17 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.EntityNotFoundException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -29,9 +32,43 @@ public class FilmController {
     }
 
     @GetMapping
-    public List<Film> getAllUsers() {
+    public List<Film> getAllFilms() {
         log.info("Fetching all films");
         return filmService.getAllFilm();
+    }
+
+    @PutMapping("/{id}")
+    public Film updateFilm(@PathVariable int id, @Valid @RequestBody Film film, BindingResult result) {
+        // Проверка на наличие ошибок валидации
+        validateRequest(result);
+
+        log.info("Updating film with ID {}: {}", id, film);
+
+        try {
+            // Обновляем фильм через сервис
+            Film updatedFilm = filmService.updateFilm(id, film);
+            return updatedFilm;
+        } catch (IllegalArgumentException e) {
+            // Если фильм не найден, выбрасываем исключение с ошибкой
+            throw new NotFoundException("Film not found with ID: " + id);
+        }
+    }
+
+    @PutMapping
+    public Film updateFilm(@Valid @RequestBody Film film, BindingResult result) {
+        // Проверка на наличие ошибок валидации
+        validateRequest(result);
+        int id = film.getId();
+        log.info("Updating film with ID {}: {}", id, film);
+
+        try {
+            // Обновляем фильм через сервис
+            Film updatedFilm = filmService.updateFilm(id, film);
+            return updatedFilm;
+        } catch (IllegalArgumentException e) {
+            // Если фильм не найден, выбрасываем исключение с ошибкой
+            throw new EntityNotFoundException("Film not found with ID: " + id);
+        }
     }
 
     @PutMapping("/{id}/like/{userId}")
@@ -41,7 +78,7 @@ public class FilmController {
             filmService.addLike(userId, id);
         } catch (Exception e) {
             log.error("Error while adding like: {}", e.getMessage());
-            throw new ValidationException("Failed to add like to film");
+            throw new EntityNotFoundException("Failed to add like to film");
         }
     }
 
@@ -52,7 +89,7 @@ public class FilmController {
             filmService.removeLike(userId, id);
         } catch (Exception e) {
             log.error("Error while removing like: {}", e.getMessage());
-            throw new ValidationException("Failed to remove like from film");
+            throw new EntityNotFoundException("Failed to remove like from film");
         }
     }
 
@@ -74,17 +111,20 @@ public class FilmController {
      */
     private void validateRequest(BindingResult result) {
         if (result.hasErrors()) {
-            // Собираем ошибки
-            List<String> errors = result.getFieldErrors().stream()
-                    .map(error -> "Field: '" + error.getField() +
-                            "', Rejected value: '" + error.getRejectedValue() +
-                            "', Error: " + error.getDefaultMessage())
-                    .collect(Collectors.toList());
+            // Создаём HashMap для сбора ошибок
+            Map<String, String> errorDetails = new HashMap<>();
 
-            log.error("Validation errors: {}", errors);
+            // Проходим по всем ошибкам в BindingResult
+            for (FieldError error : result.getFieldErrors()) {
+                // Добавляем поле с ошибкой и сообщение в HashMap
+                errorDetails.put(error.getField(), error.getRejectedValue().toString());
+            }
 
-            // Выбрасываем ValidationException с подробными ошибками
-            throw new ValidationException("Validation failed for film", errors);
+            // Логируем ошибки
+            log.error("Validation errors: {}", errorDetails);
+
+            // Выбрасываем ValidationException с ошибками в формате JSON
+            throw new ValidationException("Validation failed", errorDetails);
         }
     }
 }
