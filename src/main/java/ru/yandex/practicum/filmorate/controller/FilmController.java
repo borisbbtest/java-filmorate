@@ -1,14 +1,15 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.validation.BindingResult;
 import lombok.extern.slf4j.Slf4j;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.ValidationException;
+import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
-
-import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -16,41 +17,52 @@ import java.util.List;
 @RequestMapping("/films")
 public class FilmController {
 
-    private List<Film> films = new ArrayList<>();
+    private final FilmService filmService;
 
-    @PostMapping
-    public Film addFilm(@Valid @RequestBody Film film, BindingResult result) {
-        if (result.hasErrors()) {
-            log.error("Invalid film data: {}", film);
-            throw new ValidationException("Invalid film data");
-        }
-        films.add(film);
-        log.info("Film added: {}", film);
-        return film;
+    @Autowired
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
     }
 
-    @PutMapping("/{id}")
-    public Film updateFilm(@PathVariable int id, @Valid @RequestBody Film film, BindingResult result) {
-        if (result.hasErrors()) {
-            log.error("Invalid film data: {}", film);
-            throw new ValidationException("Invalid film data");
-        }
-        Film existingFilm = films.stream().filter(f -> f.getId() == id).findFirst()
-                .orElseThrow(() -> {
-                    log.error("Film not found with ID: {}", id);
-                    return new RuntimeException("Film not found");
-                });
-        existingFilm.setName(film.getName());
-        existingFilm.setDescription(film.getDescription());
-        existingFilm.setReleaseDate(film.getReleaseDate());
-        existingFilm.setDuration(film.getDuration());
-        log.info("Film updated: {}", existingFilm);
-        return existingFilm;
+    @PostMapping
+    public Film addFilm(@Valid @RequestBody Film film) {
+        log.info("Adding film: {}", film);
+        return filmService.addFilm(film);
     }
 
     @GetMapping
-    public List<Film> getAllFilms() {
-        log.info("Fetching all films");
+    public List<Film> getAllUsers() {
+        log.info("Fetching all users");
+        return filmService.getAllFilm();
+    }
+
+    @PutMapping("/{id}/like/{userId}")
+    public void addLike(@PathVariable int id, @PathVariable int userId) {
+        try {
+            log.info("User with ID {} is liking film with ID {}", userId, id);
+            filmService.addLike(userId, id);
+        } catch (Exception e) {
+            throw new ValidationException("Failed to add like to film");
+        }
+    }
+
+    @DeleteMapping("/{id}/like/{userId}")
+    public void removeLike(@PathVariable int id, @PathVariable int userId) {
+        try {
+            log.info("User with ID {} is removing like from film with ID {}", userId, id);
+            filmService.removeLike(userId, id);
+        } catch (Exception e) {
+            throw new ValidationException("Failed to remove like from film");
+        }
+    }
+
+    @GetMapping("/popular")
+    public List<Film> getPopularFilms(@RequestParam(required = false, defaultValue = "10") int count) {
+        log.info("Fetching top {} popular films", count);
+        List<Film> films = filmService.getTopFilms(count);
+        if (films.isEmpty()) {
+            throw new NotFoundException("No popular films found");
+        }
         return films;
     }
 }

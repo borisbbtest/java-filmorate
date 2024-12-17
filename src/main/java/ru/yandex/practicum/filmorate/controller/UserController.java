@@ -1,14 +1,15 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.BindingResult;
 import lombok.extern.slf4j.Slf4j;
+import ru.yandex.practicum.filmorate.exception.EntityNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.model.ValidationException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.service.UserService;
 
-
-import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -16,7 +17,18 @@ import java.util.List;
 @RequestMapping("/users")
 public class UserController {
 
-    private final List<User> users = new ArrayList<>();
+    private final UserService userService;
+
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @GetMapping
+    public List<User> getAllUsers() {
+        log.info("Fetching all users");
+        return userService.getAllUsers();
+    }
 
     @PostMapping
     public User addUser(@Valid @RequestBody User user, BindingResult result) {
@@ -24,33 +36,56 @@ public class UserController {
             log.error("Invalid user data: {}", user);
             throw new ValidationException("Invalid user data");
         }
-        users.add(user);
-        log.info("User added: {}", user);
-        return user;
+        log.info("Adding user: {}", user);
+        return userService.addUser(user);
     }
 
     @PutMapping("/{id}")
     public User updateUser(@PathVariable int id, @Valid @RequestBody User user, BindingResult result) {
         if (result.hasErrors()) {
-            log.error("Invalid user data: {}", user);
+            log.error("Invalid user data for update: {}", user);
             throw new ValidationException("Invalid user data");
         }
-        User existingUser = users.stream().filter(u -> u.getId() == id).findFirst()
-                .orElseThrow(() -> {
-                    log.error("User not found with ID: {}", id);
-                    return new RuntimeException("User not found");
-                });
-        existingUser.setEmail(user.getEmail());
-        existingUser.setLogin(user.getLogin());
-        existingUser.setName(user.getName());
-        existingUser.setBirthday(user.getBirthday());
-        log.info("User updated: {}", existingUser);
-        return existingUser;
+        log.info("Updating user with ID {}: {}", id, user);
+        User updatedUser = userService.updateUser(id, user);
+        if (updatedUser == null) {
+            throw new EntityNotFoundException("User not found");
+        }
+        return updatedUser;
     }
 
-    @GetMapping
-    public List<User> getAllUsers() {
-        log.info("Fetching all users");
-        return users;
+    @GetMapping("/{id}")
+    public User getUser(@PathVariable int id) {
+        log.info("Fetching user with ID: {}", id);
+        User user = userService.getUser(id);
+        if (user == null) {
+            throw new EntityNotFoundException("User not found");
+        }
+        return user;
+    }
+
+    @PutMapping("/{id}/friends/{friendId}")
+    public void addFriend(@PathVariable int id, @PathVariable int friendId) {
+        log.info("Adding friend with ID {} to user with ID {}", friendId, id);
+        userService.addFriend(id, friendId);
+    }
+
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public void removeFriend(@PathVariable int id, @PathVariable int friendId) {
+        log.info("Removing friend with ID {} from user with ID {}", friendId, id);
+        userService.removeFriend(id, friendId);
+    }
+
+    @GetMapping("/{id}/friends")
+    public List<User> getFriends(@PathVariable int id) {
+        log.info("Fetching friends for user with ID: {}", id);
+        return userService.getFriends(id);
+    }
+
+    @GetMapping("/{id}/friends/common/{otherId}")
+    public List<User> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {
+        log.info("Fetching common friends for users with IDs {} and {}", id, otherId);
+        return userService.getCommonFriends(id, otherId);
     }
 }
+
