@@ -17,7 +17,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleValidationException(ValidationException ex) {
         Map<String, Object> response = new HashMap<>();
         response.put("error", ex.getMessage());
-        response.put("details", ex.getErrorDetails());
+        response.put("message", ex.getErrorDetails());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
