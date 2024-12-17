@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.BindingResult;
 import lombok.extern.slf4j.Slf4j;
@@ -14,15 +14,11 @@ import java.util.List;
 
 @Slf4j
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/users")
 public class UserController {
 
     private final UserService userService;
-
-    @Autowired
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
 
     @GetMapping
     public List<User> getAllUsers() {
@@ -33,9 +29,19 @@ public class UserController {
     @PostMapping
     public User addUser(@Valid @RequestBody User user, BindingResult result) {
         if (result.hasErrors()) {
-            log.error("Invalid user data: {}", user);
-            throw new ValidationException("Invalid user data");
+            // Собираем ошибки
+            List<String> errorMessages = result.getFieldErrors().stream()
+                    .map(error -> "Field: " + error.getField() +
+                            ", Value: " + error.getRejectedValue() +
+                            ", Message: " + error.getDefaultMessage())
+                    .toList();
+
+            log.error("Validation errors: {}", errorMessages);
+
+            // Выбрасываем ValidationException с подробными ошибками
+            throw new ValidationException("Validation failed", errorMessages);
         }
+
         log.info("Adding user: {}", user);
         return userService.addUser(user);
     }
@@ -44,7 +50,7 @@ public class UserController {
     public User updateUser(@PathVariable int id, @Valid @RequestBody User user, BindingResult result) {
         if (result.hasErrors()) {
             log.error("Invalid user data for update: {}", user);
-            throw new ValidationException("Invalid user data");
+           // throw new ValidationException("Invalid user data");
         }
         log.info("Updating user with ID {}: {}", id, user);
         User updatedUser = userService.updateUser(id, user);

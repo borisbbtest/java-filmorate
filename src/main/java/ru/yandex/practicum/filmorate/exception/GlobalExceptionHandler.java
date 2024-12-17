@@ -14,11 +14,10 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<Map<String, String>> handleValidationException(ValidationException ex) {
-        log.error("Validation failed: {}. Stack Trace: {}", ex.getMessage(), ex);
-        Map<String, String> response = new HashMap<>();
-        response.put("error", "Validation failed");
-        response.put("message", ex.getMessage());
+    public ResponseEntity<Map<String, Object>> handleValidationException(ValidationException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        response.put("details", ex.getErrorDetails());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
@@ -39,4 +38,6 @@ public class GlobalExceptionHandler {
         response.put("message", ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+
 }

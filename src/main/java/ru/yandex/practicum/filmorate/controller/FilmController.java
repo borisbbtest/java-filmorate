@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
@@ -13,15 +13,11 @@ import java.util.List;
 
 @Slf4j
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/films")
 public class FilmController {
 
     private final FilmService filmService;
-
-    @Autowired
-    public FilmController(FilmService filmService) {
-        this.filmService = filmService;
-    }
 
     @PostMapping
     public Film addFilm(@Valid @RequestBody Film film) {
@@ -41,7 +37,7 @@ public class FilmController {
             log.info("User with ID {} is liking film with ID {}", userId, id);
             filmService.addLike(userId, id);
         } catch (Exception e) {
-            throw new ValidationException("Failed to add like to film");
+           // throw new ValidationException("Failed to add like to film");
         }
     }
 
@@ -51,7 +47,7 @@ public class FilmController {
             log.info("User with ID {} is removing like from film with ID {}", userId, id);
             filmService.removeLike(userId, id);
         } catch (Exception e) {
-            throw new ValidationException("Failed to remove like from film");
+          //  throw new ValidationException("Failed to remove like from film");
         }
     }
 
