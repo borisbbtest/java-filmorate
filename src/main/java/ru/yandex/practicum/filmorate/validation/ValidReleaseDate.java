@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.validation;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
-import ru.yandex.practicum.filmorate.model.Film;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
