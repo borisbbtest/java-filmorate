@@ -37,7 +37,7 @@ public class FilmorateApplicationTests {
         mockMvc.perform(post("/films")
                         .contentType("application/json")
                         .content(invalidFilmJson))
-                .andExpect(status().isInternalServerError());  // Ожидаем ошибку 500
+                .andExpect(status().isBadRequest());  // Ожидаем ошибку 500
     }
 
 }
