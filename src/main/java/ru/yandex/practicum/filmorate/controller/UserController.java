@@ -2,12 +2,12 @@ package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.validation.BindingResult;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.EntityNotFoundException;
-import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.List;
@@ -28,30 +28,14 @@ public class UserController {
 
     @PostMapping
     public User addUser(@Valid @RequestBody User user, BindingResult result) {
-        if (result.hasErrors()) {
-            // Собираем ошибки
-            List<String> errorMessages = result.getFieldErrors().stream()
-                    .map(error -> "Field: " + error.getField() +
-                            ", Value: " + error.getRejectedValue() +
-                            ", Message: " + error.getDefaultMessage())
-                    .toList();
-
-            log.error("Validation errors: {}", errorMessages);
-
-            // Выбрасываем ValidationException с подробными ошибками
-            throw new ValidationException("Validation failed", errorMessages);
-        }
-
+        validateRequest(result);
         log.info("Adding user: {}", user);
         return userService.addUser(user);
     }
 
     @PutMapping("/{id}")
     public User updateUser(@PathVariable int id, @Valid @RequestBody User user, BindingResult result) {
-        if (result.hasErrors()) {
-            log.error("Invalid user data for update: {}", user);
-           // throw new ValidationException("Invalid user data");
-        }
+        validateRequest(result);
         log.info("Updating user with ID {}: {}", id, user);
         User updatedUser = userService.updateUser(id, user);
         if (updatedUser == null) {
@@ -93,5 +77,25 @@ public class UserController {
         log.info("Fetching common friends for users with IDs {} and {}", id, otherId);
         return userService.getCommonFriends(id, otherId);
     }
-}
 
+    /**
+     * Проверяет наличие ошибок валидации.
+     *
+     * @param result BindingResult для проверки ошибок
+     */
+    private void validateRequest(BindingResult result) {
+        if (result.hasErrors()) {
+            // Собираем ошибки
+            List<String> errorMessages = result.getFieldErrors().stream()
+                    .map(error -> "Field: " + error.getField() +
+                            ", Value: " + error.getRejectedValue() +
+                            ", Message: " + error.getDefaultMessage())
+                    .toList();
+
+            log.error("Validation errors: {}", errorMessages);
+
+            // Выбрасываем ValidationException с подробными ошибками
+            throw new ValidationException("Validation failed", errorMessages);
+        }
+    }
+}
