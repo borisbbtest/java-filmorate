@@ -2,14 +2,16 @@ package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -20,14 +22,25 @@ public class FilmController {
     private final FilmService filmService;
 
     @PostMapping
-    public Film addFilm(@Valid @RequestBody Film film) {
+    public Film addFilm(@Valid @RequestBody Film film, BindingResult result) {
+        // Проверка валидации
+        if (result.hasErrors()) {
+            List<String> errors = result.getFieldErrors().stream()
+                    .map(error -> "Field: '" + error.getField() +
+                            "', Rejected value: '" + error.getRejectedValue() +
+                            "', Error: " + error.getDefaultMessage())
+                    .collect(Collectors.toList());
+            log.error("Validation errors: {}", errors);
+            throw new ValidationException("Validation failed for film", errors);
+        }
+
         log.info("Adding film: {}", film);
         return filmService.addFilm(film);
     }
 
     @GetMapping
     public List<Film> getAllUsers() {
-        log.info("Fetching all users");
+        log.info("Fetching all films");
         return filmService.getAllFilm();
     }
 
@@ -37,7 +50,8 @@ public class FilmController {
             log.info("User with ID {} is liking film with ID {}", userId, id);
             filmService.addLike(userId, id);
         } catch (Exception e) {
-           // throw new ValidationException("Failed to add like to film");
+            log.error("Error while adding like: {}", e.getMessage());
+            throw new ValidationException("Failed to add like to film");
         }
     }
 
@@ -47,7 +61,8 @@ public class FilmController {
             log.info("User with ID {} is removing like from film with ID {}", userId, id);
             filmService.removeLike(userId, id);
         } catch (Exception e) {
-          //  throw new ValidationException("Failed to remove like from film");
+            log.error("Error while removing like: {}", e.getMessage());
+            throw new ValidationException("Failed to remove like from film");
         }
     }
 
@@ -56,9 +71,9 @@ public class FilmController {
         log.info("Fetching top {} popular films", count);
         List<Film> films = filmService.getTopFilms(count);
         if (films.isEmpty()) {
+            log.warn("No popular films found");
             throw new NotFoundException("No popular films found");
         }
         return films;
     }
 }
-
