@@ -14,7 +14,7 @@ public class ValidationException extends RuntimeException {
 
     public ValidationException(String message) {
         super(message); // Вызов конструктора родительского класса (RuntimeException)
-        this.errorDetails=null;
+        this.errorDetails = null;
     }
 
     // Получение карты ошибок
