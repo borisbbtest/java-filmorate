@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.EntityNotFoundException;
@@ -30,15 +29,13 @@ public class UserController {
     }
 
     @PostMapping
-    public User addUser(@Valid @RequestBody User user, BindingResult result) {
-        validateRequest(result);
+    public User addUser(@Valid @RequestBody User user) {
         log.info("Adding user: {}", user);
         return userService.addUser(user);
     }
 
     @PutMapping("/{id}")
-    public User updateUser(@PathVariable int id, @Valid @RequestBody User user, BindingResult result) {
-        validateRequest(result);
+    public User updateUser(@PathVariable int id, @Valid @RequestBody User user) {
         log.info("Updating user with ID {}: {}", id, user);
         User updatedUser = userService.updateUser(id, user);
         if (updatedUser == null) {
@@ -48,11 +45,8 @@ public class UserController {
     }
 
     @PutMapping
-    public User updateUser(@Valid @RequestBody User user, BindingResult result) {
-        // Проверка на наличие ошибок валидации
-        validateRequest(result);
-
-        // Получаем ID из объекта пользователя
+    public User updateUser(@Valid @RequestBody User user) {
+         // Получаем ID из объекта пользователя
         int id = user.getId();
         User updatedUser = userService.updateUser(id, user);
         if (updatedUser == null) {
@@ -96,29 +90,4 @@ public class UserController {
         log.info("Fetching common friends for users with IDs {} and {}", id, otherId);
         return userService.getCommonFriends(id, otherId);
     }
-
-    /**
-     * Проверяет наличие ошибок валидации.
-     *
-     * @param result BindingResult для проверки ошибок
-     */
-    private void validateRequest(BindingResult result) {
-        if (result.hasErrors()) {
-            // Создаём HashMap для сбора ошибок
-            Map<String, String> errorDetails = new HashMap<>();
-
-            // Проходим по всем ошибкам в BindingResult
-            for (FieldError error : result.getFieldErrors()) {
-                // Добавляем поле с ошибкой и сообщение в HashMap
-                errorDetails.put(error.getField(), error.getRejectedValue().toString());
-            }
-
-            // Логируем ошибки
-            log.error("Validation errors: {}", errorDetails);
-
-            // Выбрасываем ValidationException с ошибками в формате JSON
-            throw new ValidationException("Validation failed", errorDetails);
-        }
-    }
-
 }

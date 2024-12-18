@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.EntityNotFoundException;
@@ -25,8 +24,7 @@ public class FilmController {
     private final FilmService filmService;
 
     @PostMapping
-    public Film addFilm(@Valid @RequestBody Film film, BindingResult result) {
-        validateRequest(result);
+    public Film addFilm(@Valid @RequestBody Film film) {
         log.info("Adding film: {}", film);
         return filmService.addFilm(film);
     }
@@ -38,10 +36,7 @@ public class FilmController {
     }
 
     @PutMapping("/{id}")
-    public Film updateFilm(@PathVariable int id, @Valid @RequestBody Film film, BindingResult result) {
-        // Проверка на наличие ошибок валидации
-        validateRequest(result);
-
+    public Film updateFilm(@PathVariable int id, @Valid @RequestBody Film film) {
         log.info("Updating film with ID {}: {}", id, film);
 
         try {
@@ -55,9 +50,7 @@ public class FilmController {
     }
 
     @PutMapping
-    public Film updateFilm(@Valid @RequestBody Film film, BindingResult result) {
-        // Проверка на наличие ошибок валидации
-        validateRequest(result);
+    public Film updateFilm(@Valid @RequestBody Film film) {
         int id = film.getId();
         log.info("Updating film with ID {}: {}", id, film);
 
@@ -94,7 +87,7 @@ public class FilmController {
     }
 
     @GetMapping("/popular")
-    public List<Film> getPopularFilms(@RequestParam(required = false, defaultValue = "10") int count) {
+    public List<Film> getPopularFilms(@RequestParam(defaultValue = "10") int count) {
         log.info("Fetching top {} popular films", count);
         List<Film> films = filmService.getTopFilms(count);
         if (films.isEmpty()) {
@@ -102,29 +95,5 @@ public class FilmController {
             throw new NotFoundException("No popular films found");
         }
         return films;
-    }
-
-    /**
-     * Проверяет наличие ошибок валидации.
-     *
-     * @param result BindingResult для проверки ошибок
-     */
-    private void validateRequest(BindingResult result) {
-        if (result.hasErrors()) {
-            // Создаём HashMap для сбора ошибок
-            Map<String, String> errorDetails = new HashMap<>();
-
-            // Проходим по всем ошибкам в BindingResult
-            for (FieldError error : result.getFieldErrors()) {
-                // Добавляем поле с ошибкой и сообщение в HashMap
-                errorDetails.put(error.getField(), error.getRejectedValue().toString());
-            }
-
-            // Логируем ошибки
-            log.error("Validation errors: {}", errorDetails);
-
-            // Выбрасываем ValidationException с ошибками в формате JSON
-            throw new ValidationException("Validation failed", errorDetails);
-        }
     }
 }
