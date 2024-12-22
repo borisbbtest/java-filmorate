@@ -22,7 +22,7 @@ public class MpaService {
 
     public Mpa getMpaById(int id) {
         var res = filmDbStorage.getMpaById(id);
-        if(res == null){
+        if(res == null) {
             throw new NotFoundException("Mpa with ID " + id + " does not exist");
         }
         return res;
