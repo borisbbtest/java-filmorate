@@ -106,7 +106,7 @@ public class FilmDbStorage implements FilmStorage {
 
             for (Genre genre : film.getGenres()) {
                 int genreCount = jdbcTemplate.queryForObject(checkGenreSql, Integer.class, genre.getId());
-                int genreFilmCount = jdbcTemplate.queryForObject(checkFilmAdnGenreSql, Integer.class, film.getId() , genre.getId());
+                int genreFilmCount = jdbcTemplate.queryForObject(checkFilmAdnGenreSql, Integer.class, film.getId(), genre.getId());
                 if (genreCount == 0) {
                     throw new ValidationException("Genre with ID " + genre.getId() + " does not exist.");
                 }
