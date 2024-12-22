@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.storage;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.EntityNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
+@Profile("inMemory")
 public class InMemoryUserStorage implements UserStorage {
 
     private final List<User> users = new ArrayList<>();
@@ -45,5 +47,25 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public List<User> getAllUsers() {
         return new ArrayList<>(users);
+    }
+
+    @Override
+    public void addFriend(int userId, int friendId) {
+
+    }
+
+    @Override
+    public List<User> getFriends(int userId) {
+        return List.of();
+    }
+
+    @Override
+    public void removeFriend(int userId, int friendId) {
+
+    }
+
+    @Override
+    public List<User> getCommonFriends(int userId, int otherId) {
+        return List.of();
     }
 }

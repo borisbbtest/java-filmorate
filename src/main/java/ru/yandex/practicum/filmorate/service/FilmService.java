@@ -4,6 +4,8 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.EntityNotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
@@ -16,27 +18,10 @@ public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
 
+
     public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
-    }
-
-    public void addLike(int userId, int filmId) {
-        // Проверяем, существует ли фильм с указанным ID
-        Film film = filmStorage.getFilmById(filmId);
-        if (film == null) {
-            throw new EntityNotFoundException("Film with ID " + filmId + " does not exist");
-        }
-
-        // Проверяем, существует ли пользователь с указанным ID
-        User user = userStorage.getUserById(userId);
-        if (user == null) {
-            throw new EntityNotFoundException("User with ID " + userId + " does not exist");
-        }
-
-        // Добавляем лайк
-        film.getLikes().add(userId);
-        filmStorage.updateFilm(film);
     }
 
     public Film addFilm(Film film) {
@@ -44,58 +29,55 @@ public class FilmService {
     }
 
     public Film updateFilm(int id, Film film) {
-        // Получаем существующий фильм из хранилища
         Film existingFilm = filmStorage.getFilmById(id);
-
-        // Проверка на существование фильма
         if (existingFilm == null) {
             throw new EntityNotFoundException("Film with ID " + id + " not found");
         }
 
-        // Обновляем поля существующего фильма на основе данных из запроса
         existingFilm.setName(film.getName());
         existingFilm.setDescription(film.getDescription());
         existingFilm.setReleaseDate(film.getReleaseDate());
         existingFilm.setDuration(film.getDuration());
+        existingFilm.setGenres(film.getGenres());
+        existingFilm.setRating(film.getRating());
 
-        // Обновляем фильм в хранилище
         filmStorage.updateFilm(existingFilm);
 
-        // Возвращаем обновленный фильм
         return existingFilm;
     }
 
-    public List<Film> getAllFilm() {
-        return  filmStorage.getAllFilms();
+    public Film getFilmById(int id) {
+        Film film = filmStorage.getFilmByIdWithGenres(id);
+       // enrichFilmWithGenres(film);
+        return film;
     }
 
-    public void removeLike(int userId, int filmId) {
-        // Проверяем, существует ли фильм
-        Film film = filmStorage.getFilmById(filmId);
-        if (film == null) {
-            throw new EntityNotFoundException("Film with ID " + filmId + " does not exist");
-        }
+    private Film enrichFilmWithGenres(Film film) {
+        List<Genre> genres = filmStorage.getGenresByFilmId(film.getId());
+        film.setGenres(genres.stream().collect(Collectors.toSet()));
+        Mpa mpa = filmStorage.getMpaByFilmId(film.getId());
+        film.setRating(mpa);
+        return film;
+    }
 
-        // Проверяем, существует ли пользователь
-        User user = userStorage.getUserById(userId);
-        if (user == null) {
-            throw new EntityNotFoundException("User with ID " + userId + " does not exist");
-        }
+    public List<Film> getAllFilm() {
+        return filmStorage.getAllFilms();
+    }
 
-        // Проверяем, поставлен ли лайк, перед удалением
-        if (!film.getLikes().contains(userId)) {
-            throw new ValidationException("User with ID " + userId + " has not liked the film with ID " + filmId);
-        }
 
-        // Удаляем лайк
-        film.getLikes().remove(userId);
-        filmStorage.updateFilm(film);
+    public void addLike(int filmId, int userId) {
+        filmStorage.addLike(filmId, userId);
+    }
+
+    public void removeLike(int filmId, int userId) {
+        filmStorage.removeLike(filmId, userId);
+    }
+
+    public int getLikesCount(int filmId) {
+        return filmStorage.getLikesCount(filmId);
     }
 
     public List<Film> getTopFilms(int count) {
-        return filmStorage.getAllFilms().stream()
-                .sorted((film1, film2) -> Integer.compare(film2.getLikes().size(), film1.getLikes().size()))
-                .limit(count)
-                .collect(Collectors.toList());
+        return filmStorage.getTopFilms(count);
     }
 }
