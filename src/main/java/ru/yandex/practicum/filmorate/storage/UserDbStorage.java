@@ -3,12 +3,13 @@ package ru.yandex.practicum.filmorate.storage;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.EntityNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.List;
 
 @Component
@@ -24,11 +25,28 @@ public class UserDbStorage implements UserStorage {
     @Override
     public User addUser(User user) {
         String sql = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
-        jdbcTemplate.update(sql, user.getEmail(), user.getLogin(), user.getName(), user.getBirthday());
 
-        String idSql = "SELECT id FROM users WHERE email = ?";
-        int id = jdbcTemplate.queryForObject(idSql, Integer.class, user.getEmail());
-        user.setId(id);
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+
+        jdbcTemplate.update(connection -> {
+            PreparedStatement stmt = connection.prepareStatement(sql, new String[]{"id"});
+            stmt.setString(1, user.getEmail());
+            stmt.setString(2, user.getLogin());
+            stmt.setString(3, user.getName());
+
+            if (user.getBirthday() == null) {
+                stmt.setNull(4, Types.DATE);
+            } else {
+                stmt.setDate(4, Date.valueOf(user.getBirthday()));
+            }
+            return stmt;
+        }, keyHolder);
+
+        if (keyHolder.getKey() != null) {
+            user.setId(keyHolder.getKey().intValue());
+        } else {
+            throw new IllegalStateException("Failed to retrieve user ID after insert.");
+        }
 
         return user;
     }

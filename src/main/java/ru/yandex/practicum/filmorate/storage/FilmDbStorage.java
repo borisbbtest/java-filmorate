@@ -98,24 +98,30 @@ public class FilmDbStorage implements FilmStorage {
             film.setRating(mpa);
         }
 
-        // Добавление жанров с проверкой на существование
+        // Добавление жанров с проверкой на существование и пакетной вставкой
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             String checkGenreSql = "SELECT COUNT(*) FROM genres WHERE id = ?";
-            String genreSql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
-            String checkFilmAdnGenreSql = "SELECT COUNT(*) FROM film_genres WHERE film_id = ? AND genre_id = ?";
+            String genreSql = "MERGE INTO film_genres (film_id, genre_id) KEY (film_id, genre_id) VALUES (?, ?)";
 
-            for (Genre genre : film.getGenres()) {
+            // Используем Set для уникальности комбинаций
+            Set<Genre> uniqueGenres = new HashSet<>(film.getGenres());
+            List<Object[]> batchArgs = new ArrayList<>();
+
+            for (Genre genre : uniqueGenres) {
+                // Проверяем существование жанра
                 int genreCount = jdbcTemplate.queryForObject(checkGenreSql, Integer.class, genre.getId());
-                int genreFilmCount = jdbcTemplate.queryForObject(checkFilmAdnGenreSql, Integer.class, film.getId(), genre.getId());
                 if (genreCount == 0) {
                     throw new ValidationException("Genre with ID " + genre.getId() + " does not exist.");
                 }
-                if (genreFilmCount == 0) {
-                    jdbcTemplate.update(genreSql, film.getId(), genre.getId());
-                }
+                batchArgs.add(new Object[]{film.getId(), genre.getId()});
+            }
 
+            // Выполняем пакетную вставку только для новых записей
+            if (!batchArgs.isEmpty()) {
+                jdbcTemplate.batchUpdate(genreSql, batchArgs);
             }
         }
+
         // Сортировка жанров по ID
         List<Genre> sortedGenres = getGenresByFilmId(film.getId());
         sortedGenres.sort(Comparator.comparing(Genre::getId));
@@ -186,15 +192,27 @@ public class FilmDbStorage implements FilmStorage {
         String deleteGenresSql = "DELETE FROM film_genres WHERE film_id = ?";
         jdbcTemplate.update(deleteGenresSql, film.getId());
 
+        // Добавление жанров с проверкой на существование и пакетной вставкой
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             String checkGenreSql = "SELECT COUNT(*) FROM genres WHERE id = ?";
-            String genreSql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
-            for (Genre genre : film.getGenres()) {
+            String genreSql = "MERGE INTO film_genres (film_id, genre_id) KEY (film_id, genre_id) VALUES (?, ?)";
+
+            // Используем Set для уникальности комбинаций
+            Set<Genre> uniqueGenres = new HashSet<>(film.getGenres());
+            List<Object[]> batchArgs = new ArrayList<>();
+
+            for (Genre genre : uniqueGenres) {
+                // Проверяем существование жанра
                 int genreCount = jdbcTemplate.queryForObject(checkGenreSql, Integer.class, genre.getId());
                 if (genreCount == 0) {
-                    throw new EntityNotFoundException("Genre with ID " + genre.getId() + " does not exist.");
+                    throw new ValidationException("Genre with ID " + genre.getId() + " does not exist.");
                 }
-                jdbcTemplate.update(genreSql, film.getId(), genre.getId());
+                batchArgs.add(new Object[]{film.getId(), genre.getId()});
+            }
+
+            // Выполняем пакетную вставку только для новых записей
+            if (!batchArgs.isEmpty()) {
+                jdbcTemplate.batchUpdate(genreSql, batchArgs);
             }
         }
 
