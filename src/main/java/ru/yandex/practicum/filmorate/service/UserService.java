@@ -3,9 +3,9 @@ package ru.yandex.practicum.filmorate.service;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.exception.EntityNotFoundException;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -16,45 +16,35 @@ public class UserService {
     }
 
     public User addUser(User user) {
-        userStorage.addUser(user);
-        return user;
+        return userStorage.addUser(user);
     }
-
 
     public User updateUser(int id, User user) {
         User existingUser = userStorage.getUserById(id);
+        if (existingUser == null) {
+            throw new EntityNotFoundException("User with ID " + id + " not found.");
+        }
         existingUser.setEmail(user.getEmail());
         existingUser.setLogin(user.getLogin());
         existingUser.setName(user.getName());
         existingUser.setBirthday(user.getBirthday());
-        userStorage.updateUser(existingUser);
-        return existingUser;
+        return userStorage.updateUser(existingUser);
     }
 
     public User getUser(int id) {
-        return userStorage.getUserById(id);
+        User user = userStorage.getUserById(id);
+        if (user == null) {
+            throw new EntityNotFoundException("User with ID " + id + " not found.");
+        }
+        return user;
     }
 
     public void addFriend(int userId, int friendId) {
-        User user = userStorage.getUserById(userId);
-        User friend = userStorage.getUserById(friendId);
-
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
-
-        userStorage.updateUser(user);
-        userStorage.updateUser(friend);
+        userStorage.addFriend(userId,friendId);
     }
 
     public void removeFriend(int userId, int friendId) {
-        User user = userStorage.getUserById(userId);
-        User friend = userStorage.getUserById(friendId);
-
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
-
-        userStorage.updateUser(user);
-        userStorage.updateUser(friend);
+        userStorage.removeFriend(userId, friendId);
     }
 
     public List<User> getAllUsers() {
@@ -62,18 +52,14 @@ public class UserService {
     }
 
     public List<User> getFriends(int userId) {
-        return userStorage.getUserById(userId).getFriends().stream()
-                .map(userStorage::getUserById)
-                .collect(Collectors.toList());
+        User user = userStorage.getUserById(userId);
+        if (user == null) {
+            throw new EntityNotFoundException("User with ID " + userId + " not found.");
+        }
+        return userStorage.getFriends(userId);
     }
 
-    public List<User> getCommonFriends(int userId1, int userId2) {
-        User user1 = userStorage.getUserById(userId1);
-        User user2 = userStorage.getUserById(userId2);
-
-        user1.getFriends().retainAll(user2.getFriends());
-        return user1.getFriends().stream()
-                .map(userStorage::getUserById)
-                .collect(Collectors.toList());
+    public List<User> getCommonFriends(int id, int userId) {
+       return userStorage.getCommonFriends(id, userId);
     }
 }

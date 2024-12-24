@@ -31,6 +31,12 @@ public class FilmController {
         return filmService.getAllFilm();
     }
 
+    @GetMapping("/{id}")
+    public Film getFilmById(@PathVariable int id) {
+        log.info("Fetching film with ID: {}", id);
+        return filmService.getFilmById(id);
+    }
+
     @PutMapping("/{id}")
     public Film updateFilm(@PathVariable int id, @Valid @RequestBody Film film) {
         log.info("Updating film with ID {}: {}", id, film);
@@ -60,26 +66,19 @@ public class FilmController {
         }
     }
 
-    @PutMapping("/{id}/like/{userId}")
-    public void addLike(@PathVariable int id, @PathVariable int userId) {
-        try {
-            log.info("User with ID {} is liking film with ID {}", userId, id);
-            filmService.addLike(userId, id);
-        } catch (Exception e) {
-            log.error("Error while adding like: {}", e.getMessage());
-            throw new EntityNotFoundException("Failed to add like to film");
-        }
+    @PutMapping("/{filmId}/like/{userId}")
+    public void addLike(@PathVariable int filmId, @PathVariable int userId) {
+        filmService.addLike(filmId, userId);
     }
 
-    @DeleteMapping("/{id}/like/{userId}")
-    public void removeLike(@PathVariable int id, @PathVariable int userId) {
-        try {
-            log.info("User with ID {} is removing like from film with ID {}", userId, id);
-            filmService.removeLike(userId, id);
-        } catch (Exception e) {
-            log.error("Error while removing like: {}", e.getMessage());
-            throw new EntityNotFoundException("Failed to remove like from film");
-        }
+    @DeleteMapping("/{filmId}/like/{userId}")
+    public void removeLike(@PathVariable int filmId, @PathVariable int userId) {
+        filmService.removeLike(filmId, userId);
+    }
+
+    @GetMapping("/{filmId}/likes/count")
+    public int getLikesCount(@PathVariable int filmId) {
+        return filmService.getLikesCount(filmId);
     }
 
     @GetMapping("/popular")
